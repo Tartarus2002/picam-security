@@ -1,0 +1,39 @@
+[Unit]
+Description=PiCam Motion Detection Service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=pi
+Group=video
+
+# Stop RTSP stream to free camera for picamera2 direct capture
+ExecStartPre=+/usr/bin/systemctl stop picam-stream.service
+
+ExecStart=/home/pi/picam/venv/bin/python3 /home/pi/picam/motion-detect/motion_detector.py --config /home/pi/picam/config/picam.conf
+
+# Restart RTSP stream when motion detector stops
+ExecStopPost=+/usr/bin/systemctl start picam-stream.service
+
+WorkingDirectory=/home/pi/picam
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=picam-motion
+
+# Security hardening
+ProtectSystem=strict
+ReadWritePaths=/home/pi/picam /home/pi/picam-recordings /home/pi/picam-logs
+PrivateTmp=true
+
+# Resource limits (picamera2 + OpenCV need more headroom than RTSP reader)
+MemoryMax=150M
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target
+

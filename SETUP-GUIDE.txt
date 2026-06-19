@@ -1,0 +1,329 @@
+﻿================================================================
+   PiCam Security Camera System - Complete Setup Guide
+   Raspberry Pi Zero 2 W + Camera Module
+================================================================
+
+CONTENTS:
+  Part 1: Flash Raspberry Pi OS to microSD
+  Part 2: First Boot & SSH Access
+  Part 3: Transfer Project Files & Run Setup
+  Part 4: Verify Everything Works
+  Part 5: Viewing Your Camera Feed
+  Part 6: Architecture Overview
+  Part 7: Customization & Next Steps
+  Part 8: Troubleshooting
+
+
+================================================================
+PART 1: FLASH RASPBERRY PI OS TO MICROSD
+================================================================
+
+You have Raspberry Pi Imager already downloaded (on the SD card).
+After we format the card, you'll need to re-download or use
+a copy from your C: drive.
+
+STEP 1: Download Raspberry Pi Imager
+  - Go to: https://www.raspberrypi.com/software/
+  - Or use the copy you already have: imager_2.0.6.exe
+  - Install and open it
+
+STEP 2: In Raspberry Pi Imager:
+  a) Click "CHOOSE DEVICE" -> Raspberry Pi Zero 2 W
+  b) Click "CHOOSE OS" -> Raspberry Pi OS (other)
+     -> Raspberry Pi OS Lite (64-bit)
+        (No desktop - saves RAM for camera work)
+  c) Click "CHOOSE STORAGE" -> Select your 29GB microSD card
+
+STEP 3: Click the GEAR ICON (settings) - THIS IS CRITICAL:
+  [x] Set hostname:           picam
+  [x] Enable SSH:             Use password authentication
+  [x] Set username/password:  pi / <YOUR_STRONG_PASSWORD>
+  [x] Configure WiFi:
+      SSID:     <YOUR_WIFI_SSID>
+      Password: <YOUR_WIFI_PASSWORD>
+      Country:  US (or your country code)
+  [x] Set locale:
+      Timezone: (your timezone, e.g., America/New_York)
+      Keyboard: us
+
+STEP 4: Click "WRITE" and confirm
+  - This will take 5-10 minutes
+  - DO NOT remove the card until it says "Write Successful"
+
+STEP 5: After writing completes:
+  - Remove the SD card
+  - Re-insert it (Windows will show the "bootfs" drive)
+  - Open the bootfs drive in Explorer
+  - Verify the config.txt file exists
+  - Append the contents of boot-config\config.txt.append
+    to the END of the existing config.txt on the card
+
+
+================================================================
+PART 2: FIRST BOOT & SSH ACCESS
+================================================================
+
+STEP 1: Assemble the Pi
+  - Insert the microSD card into the Pi Zero 2 W
+  - Connect the camera ribbon cable:
+    * Lift the camera connector tab on the Pi (gently!)
+    * Insert the ribbon cable with contacts facing the board
+    * Push the tab back down to lock it
+  - Connect power via USB (the port labeled "PWR")
+
+STEP 2: Wait for boot (1-2 minutes)
+  - The green LED will blink during boot
+  - It will connect to the WiFi you configured automatically
+
+STEP 3: Find the Pi's IP address
+  Option A: Check your router's DHCP client list
+  Option B: From your Windows PC, open PowerShell:
+    ping picam.local
+  Option C: Use an app like "Fing" on your phone
+
+STEP 4: SSH into the Pi
+  From Windows PowerShell or Terminal:
+    ssh pi@picam.local
+  Or:
+    ssh pi@<IP-ADDRESS>
+  Password: <the one you configured in Step 3>
+
+  First time connecting, type "yes" to accept the host key.
+
+
+================================================================
+PART 3: TRANSFER PROJECT FILES & RUN SETUP
+================================================================
+
+STEP 1: Copy project files to the Pi
+  From your Windows PC (PowerShell), run:
+
+    scp -r path\to\picam-project pi@picam.local:/home/pi/picam-setup
+
+  Enter the password you set in Part 1, Step 3.
+
+STEP 2: SSH into the Pi:
+    ssh pi@picam.local
+
+STEP 3: Run the setup script:
+    cd /home/pi/picam-setup
+    chmod +x setup.sh
+    sudo ./setup.sh
+
+  This takes 15-25 minutes. It will:
+    - Update all system packages
+    - Install Python, OpenCV, ffmpeg, libcamera
+    - Download mediamtx streaming server
+    - Configure the camera
+    - Install all services
+    - Set up the firewall
+    - Create convenience commands
+
+STEP 4: Reboot when prompted:
+    sudo reboot
+
+STEP 5: SSH back in after reboot (~60 seconds):
+    ssh pi@picam.local
+    picam-status
+
+
+================================================================
+PART 4: VERIFY EVERYTHING WORKS
+================================================================
+
+After reboot, run:
+    picam-status
+
+You should see:
+  - picam-stream: RUNNING
+  - picam-motion: RUNNING
+  - Camera temperature and storage info
+
+Check service logs:
+    picam-ctl logs picam-stream    (Ctrl+C to exit)
+    picam-ctl logs picam-motion
+
+Test the camera directly:
+    libcamera-hello --list-cameras
+
+Verify mediamtx API:
+    curl http://localhost:9997/v3/paths/list
+
+
+================================================================
+PART 5: VIEWING YOUR CAMERA FEED
+================================================================
+
+From any device on your WiFi network:
+
+BROWSER (easiest):
+  Open: http://picam.local:8889/cam
+  This uses WebRTC for low-latency live view.
+
+  Fallback (if WebRTC doesn't work):
+  Open: http://picam.local:8888/cam
+  This uses HLS (higher latency, broader compatibility).
+
+VLC MEDIA PLAYER:
+  Open VLC -> Media -> Open Network Stream
+  URL: rtsp://picam.local:8554/cam
+
+MOBILE APPS:
+  Any RTSP viewer app can connect to:
+  rtsp://<pi-ip-address>:8554/cam
+
+
+================================================================
+PART 6: ARCHITECTURE OVERVIEW
+================================================================
+
+The system has 3 main components:
+
+1. STREAMING SERVER (mediamtx)
+   - Captures video from the Pi Camera via libcamera
+   - Serves it as RTSP, WebRTC, and HLS streams
+   - Lightweight single binary, <50MB RAM
+   - Config: ~/picam/config/mediamtx.yml
+   - Service: picam-stream.service
+
+2. MOTION DETECTOR (Python + OpenCV)
+   - Reads from the local RTSP stream
+   - Uses frame differencing to detect motion
+   - Saves snapshots + video clips on motion events
+   - Logs events as JSON for later analysis
+   - Config: ~/picam/config/picam.conf
+   - Service: picam-motion.service
+
+3. WATCHDOG + MAINTENANCE
+   - Checks service health every 5 minutes
+   - Auto-restarts crashed services
+   - Monitors disk space and temperature
+   - Hourly storage cleanup (keeps within 8GB limit)
+   - Service: picam-watchdog.timer
+
+Data flow:
+  Camera -> libcamera -> mediamtx -> RTSP stream
+                                  -> WebRTC (browsers)
+                                  -> HLS (fallback)
+                          |
+                          v
+                   motion_detector.py
+                          |
+                    motion detected?
+                     /          \
+                   yes           no
+                  /                \
+          save snapshot         continue
+          record clip             monitoring
+          log event
+
+
+FILE STRUCTURE ON THE PI:
+  /home/pi/
+    picam/                      <- Main project
+      bin/mediamtx              <- Streaming server binary
+      config/
+        mediamtx.yml            <- Stream server config
+        picam.conf              <- Master config file
+      motion-detect/
+        motion_detector.py      <- Motion detection script
+      scripts/
+        status.sh               <- System status display
+        picam-ctl.sh            <- Service management
+        watchdog.sh             <- Health monitor
+        storage-cleanup.sh      <- Storage maintenance
+      services/                 <- Systemd service files
+      venv/                     <- Python virtual environment
+    picam-recordings/           <- All recordings
+      snapshots/                <- JPEG motion snapshots
+      clips/                    <- MP4 video clips
+      events/                   <- JSON event metadata
+    picam-logs/                 <- All logs
+      motion.log
+      cleanup.log
+      watchdog.log
+
+
+================================================================
+PART 7: CUSTOMIZATION & NEXT STEPS
+================================================================
+
+ADJUST CAMERA SETTINGS:
+  Edit: ~/picam/config/mediamtx.yml
+  Then: picam-ctl restart
+
+  Key settings:
+    rpiCameraWidth/Height  - Resolution (720p default)
+    rpiCameraFPS           - Frame rate (15 default)
+    rpiCameraBitrate       - Quality (1.5Mbps default)
+    rpiCameraRotation      - 0/90/180/270
+    rpiCameraHFlip/VFlip   - Mirror the image
+
+ADJUST MOTION DETECTION:
+  Edit: ~/picam/config/picam.conf
+  Then: sudo systemctl restart picam-motion
+
+  Key settings:
+    MOTION_SENSITIVITY     - 1-100 (25 default)
+    MOTION_MIN_AREA        - Pixel area threshold (5000 default)
+    MOTION_COOLDOWN        - Seconds between triggers (10 default)
+    CLIP_DURATION          - Seconds per clip (30 default)
+
+THINGS YOU MENTIONED FOR LATER:
+  - Secure remote access (VPN, Tailscale, WireGuard, etc.)
+  - Ring-style motion clipping (pre-roll buffer, smart zones)
+  - Push notifications on motion events
+  - Multi-camera support
+  - Cloud backup of clips
+  - Web dashboard / mobile app
+
+
+================================================================
+PART 8: TROUBLESHOOTING
+================================================================
+
+CAMERA NOT DETECTED:
+  libcamera-hello --list-cameras
+  - If "No cameras available": check ribbon cable connection
+  - Ensure contacts face the board, tab is locked
+  - Try: sudo raspi-config -> Interface -> Camera -> Enable
+  - Reboot after changes
+
+SERVICES WON'T START:
+  journalctl -u picam-stream -n 50 --no-pager
+  journalctl -u picam-motion -n 50 --no-pager
+  - Common issue: camera not ready. Reboot and wait 30s.
+
+CAN'T CONNECT TO STREAM:
+  - Check firewall: sudo ufw status
+  - Check service: systemctl status picam-stream
+  - Check port: ss -tlnp | grep 8554
+  - Try IP address instead of picam.local
+
+HIGH CPU / OVERHEATING:
+  - Reduce resolution in mediamtx.yml (try 640x480)
+  - Reduce FPS to 10
+  - Add a heatsink to the Pi's CPU chip
+  - Ensure ventilation in the enclosure
+
+SD CARD FULL:
+  - Run: /home/pi/picam/scripts/storage-cleanup.sh
+  - Reduce MAX_STORAGE_GB in picam.conf
+  - Reduce CLIP_DURATION
+  - Disable CLIP_ON_MOTION (keep snapshots only)
+
+WIFI DISCONNECTS:
+  - Check signal strength: iwconfig wlan0
+  - Add a WiFi reconnect cron:
+    */5 * * * * ping -c 1 8.8.8.8 || sudo systemctl restart NetworkManager
+
+FORGOT PASSWORD:
+  - Remove the SD card, mount on your PC
+  - Delete the file: etc/shadow (requires Linux or WSL)
+  - Or reflash and redo setup
+
+
+================================================================
+That's it! Your Pi security camera infrastructure is ready.
+Run the setup, reboot, and you'll have a live camera stream.
+================================================================

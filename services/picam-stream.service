@@ -1,0 +1,33 @@
+[Unit]
+Description=PiCam RTSP/WebRTC Streaming Server (mediamtx)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=pi
+Group=video
+ExecStart=/home/pi/picam/bin/mediamtx /home/pi/picam/config/mediamtx.yml
+WorkingDirectory=/home/pi/picam
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=picam-stream
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/pi/picam /home/pi/picam-recordings /home/pi/picam-logs
+PrivateTmp=true
+
+# Resource limits (Pi Zero 2 W has 512MB RAM)
+MemoryMax=150M
+CPUQuota=60%
+
+[Install]
+WantedBy=multi-user.target

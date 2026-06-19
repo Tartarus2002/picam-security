@@ -1,0 +1,43 @@
+# ============================================
+# PiCam Security Camera - Master Configuration
+# ============================================
+# Copy this file to picam.conf and fill in your network details.
+# Real picam.conf is gitignored.
+# After changes on the Pi: sudo systemctl restart picam-motion
+
+# --- Network ---
+WIFI_SSID="YOUR_WIFI_SSID"
+WIFI_PASSWORD="YOUR_WIFI_PASSWORD"
+HOSTNAME="picam"
+
+# --- Camera ---
+# Resolution: 1280x720 is a good balance for Pi Zero 2 W
+# Higher resolutions (1920x1080) will use more CPU/RAM
+CAMERA_WIDTH=1280
+CAMERA_HEIGHT=720
+CAMERA_FPS=15
+CAMERA_ROTATION=0          # 0, 90, 180, or 270
+CAMERA_HFLIP=false         # Horizontal flip
+CAMERA_VFLIP=false         # Vertical flip
+
+# --- Streaming ---
+STREAM_PORT=8554           # RTSP port
+WEBRTC_PORT=8889           # WebRTC port (browser viewing)
+HLS_PORT=8888              # HLS port (browser viewing fallback)
+
+# --- Motion Detection ---
+MOTION_ENABLED=true
+MOTION_SENSITIVITY=25      # 1-100, higher = more sensitive
+MOTION_MIN_AREA=2500       # Minimum pixel area to trigger (filters noise)
+MOTION_COOLDOWN=1          # Seconds between motion events
+
+# --- Storage ---
+STORAGE_DIR="/home/pi/picam-recordings"
+CLIP_DURATION=30           # Seconds per recording clip
+MAX_STORAGE_GB=8           # Auto-delete oldest when exceeded
+SNAPSHOT_ON_MOTION=true    # Save JPEG snapshot on motion
+CLIP_ON_MOTION=true        # Save video clip on motion
+
+# --- Logging ---
+LOG_DIR="/home/pi/picam-logs"
+LOG_LEVEL="info"           # debug, info, warn, error

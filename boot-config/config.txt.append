@@ -1,0 +1,12 @@
+# ============================================
+# PiCam Security Camera - Camera Configuration
+# ============================================
+# Enable camera (legacy support)
+start_x=1
+gpu_mem=128
+
+# Ensure camera auto-detect is enabled (Bookworm default)
+camera_auto_detect=1
+
+# Reduce GPU memory overhead but keep enough for camera
+# 128MB is the sweet spot for Pi Zero 2 W with camera

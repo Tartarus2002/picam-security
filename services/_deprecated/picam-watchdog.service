@@ -1,0 +1,11 @@
+[Unit]
+Description=PiCam Watchdog - Monitors camera services health
+After=picam-stream.service picam-motion.service
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/home/pi/picam/scripts/watchdog.sh
+
+[Install]
+# Triggered by timer, not directly

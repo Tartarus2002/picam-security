@@ -1,0 +1,42 @@
+# ============================================
+# MediaMTX Configuration for PiCam
+# ============================================
+# Docs: https://github.com/bluenviron/mediamtx
+
+# --- General ---
+logLevel: info
+logDestinations: [stdout]
+
+# --- API (for health checks) ---
+api: yes
+apiAddress: :9997
+
+# --- RTSP ---
+rtsp: yes
+rtspAddress: :8554
+rtspTransports: [tcp, udp]
+
+# --- WebRTC (browser-based live view) ---
+webrtc: yes
+webrtcAddress: :8889
+
+# --- HLS (fallback browser streaming) ---
+hls: yes
+hlsAddress: :8888
+
+# --- Camera Path ---
+paths:
+  cam:
+    source: rpiCamera
+    rpiCameraWidth: 1280
+    rpiCameraHeight: 720
+    rpiCameraFPS: 15
+    rpiCameraCodec: auto
+    rpiCameraIDRPeriod: 30
+    rpiCameraBitrate: 1500000
+    rpiCameraHFlip: false
+    rpiCameraVFlip: false
+    rpiCameraExposure: normal
+    rpiCameraAWB: auto
+    rpiCameraDenoise: "off"
+    rpiCameraMetering: centre

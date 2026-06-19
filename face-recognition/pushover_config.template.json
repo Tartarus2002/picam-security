@@ -1,0 +1,26 @@
+{
+  "_doc": "Copy this file to pushover_config.json and fill in the placeholders. The real pushover_config.json is gitignored. Get user_key from https://pushover.net/ and create an app_token at https://pushover.net/apps/build.",
+
+  "user_key":   "PASTE_YOUR_PUSHOVER_USER_KEY_HERE",
+  "app_token":  "PASTE_YOUR_APP_TOKEN_HERE",
+
+  "away_mode": true,
+  "notify_known": true,
+  "notify_motion_no_face": true,
+  "attach_photo": true,
+
+  "unknown_priority": 2,
+  "emergency_retry": 60,
+  "emergency_expire": 3600,
+  "notify_max_age": 300,
+
+  "live_url":       "http://YOUR_TAILSCALE_OR_LAN_IP:8888/cam/",
+  "live_url_title": "View live camera",
+
+  "cooldown_known": 60,
+  "cooldown_unknown": 300,
+  "cooldown_motion": 120,
+  "cooldown_per_identity_minutes": 10,
+
+  "presence_host": ""
+}

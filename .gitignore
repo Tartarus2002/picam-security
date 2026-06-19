@@ -1,0 +1,33 @@
+# PiCam — files that must NOT be committed
+# ============================================
+
+# --- Secrets / configuration with real creds ---
+face-recognition/pushover_config.json
+config/picam.conf
+# Note: the actual ~/.picam_secrets.json lives in $USERPROFILE, outside this repo.
+
+# --- Personally identifiable data ---
+face-recognition/faces/
+face-recognition/audio/
+# (audio/ may contain copyrighted greeting clips)
+
+# --- Binary blobs (not source — re-download from OpenCV's model zoo) ---
+face-recognition/models/
+
+# --- Runtime state ---
+face-recognition/logs/
+face-recognition/pushover_queue.jsonl
+face-recognition/processed_files.json
+face-recognition/face_watcher.pid
+face-recognition/nul
+
+# --- Build artifacts ---
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# --- Backups & one-time setup scripts kept locally only ---
+*.bak-*
+*.bak
+_archive/
